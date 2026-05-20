@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Belle — Sistema de Gestão</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --rose: #c2185b;
+  --rose-light: #e91e63;
+  --rose-pale: #fce4ec;
+  --rose-mid: #f8bbd9;
+  --gold: #b8860b;
+  --gold-light: #f5e6c0;
+  --dark: #1a1218;
+  --text: #2d2230;
+  --muted: #7a6b74;
+  --border: #ecdde6;
+  --bg: #fdf8fb;
+  --white: #ffffff;
+  --card: #ffffff;
+  --success: #2e7d32;
+  --success-bg: #e8f5e9;
+  --warn: #e65100;
+  --warn-bg: #fff3e0;
+  --danger: #c62828;
+  --danger-bg: #ffebee;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── Layout ── */
+.shell { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 220px; background: var(--dark); flex-shrink: 0;
+  display: flex; flex-direction: column; padding: 0;
+  position: sticky; top: 0; height: 100vh;
+}
+.sidebar-logo {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-logo .brand { font-family: 'Playfair Display', serif; font-size: 18px; color: #fff; line-height: 1.2; }
+.sidebar-logo .tagline { font-size: 10px; color: var(--rose-light); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
+nav { flex: 1; padding: 12px 0; }
+.nav-section { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); padding: 16px 24px 6px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 24px; font-size: 13px; color: rgba(255,255,255,0.65);
+  cursor: pointer; border: none; background: none; width: 100%; text-align: left;
+  transition: all .15s; border-left: 3px solid transparent;
+}
+.nav-item:hover { color: #fff; background: rgba(255,255,255,0.06); }
+.nav-item.active { color: #fff; background: rgba(194,24,91,0.2); border-left-color: var(--rose-light); }
+.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.main { flex: 1; overflow-y: auto; }
+.page { display: none; padding: 36px 40px; max-width: 960px; }
+.page.active { display: block; }
+
+/* ── Page header ── */
+.page-header { margin-bottom: 28px; }
+.page-header h1 { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 600; color: var(--dark); }
+.page-header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+/* ── Cards ── */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+  margin-bottom: 20px;
+}
+.card-title { font-size: 13px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+
+/* ── Forms ── */
+.form-grid { display: grid; gap: 14px; }
+.form-grid.col2 { grid-template-columns: 1fr 1fr; }
+.form-grid.col3 { grid-template-columns: 1fr 1fr 1fr; }
+.field label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 5px; }
+.field input, .field select, .field textarea {
+  width: 100%; padding: 10px 14px; font-size: 14px; font-family: 'DM Sans', sans-serif;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); outline: none;
+  transition: border-color .15s;
+}
+.field input:focus, .field select:focus { border-color: var(--rose); }
+.field input::placeholder { color: #c0adb8; }
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 20px; font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+  border-radius: var(--radius-sm); border: none; cursor: pointer; transition: all .15s;
+}
+.btn-primary { background: var(--rose); color: #fff; }
+.btn-primary:hover { background: var(--rose-light); }
+.btn-ghost { background: none; border: 1px solid var(--border); color: var(--muted); }
+.btn-ghost:hover { border-color: var(--rose); color: var(--rose); }
+.btn-danger { background: none; border: 1px solid #f5c6c6; color: var(--danger); font-size: 12px; padding: 6px 12px; }
+.btn-danger:hover { background: var(--danger-bg); }
+.form-actions { display: flex; gap: 10px; margin-top: 6px; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 28px; right: 28px;
+  background: var(--dark); color: #fff; padding: 12px 20px;
+  border-radius: var(--radius-sm); font-size: 13px;
+  transform: translateY(80px); opacity: 0; transition: all .3s;
+  z-index: 999; border-left: 3px solid var(--rose-light);
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── Table ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); border-bottom: 1px solid var(--border); }
+td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--rose-pale); }
+.empty-row td { text-align: center; color: var(--muted); padding: 32px; font-size: 13px; }
+
+/* ── Badges ── */
+.badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 99px; }
+.badge-ok { background: var(--success-bg); color: var(--success); }
+.badge-soon { background: var(--warn-bg); color: var(--warn); }
+.badge-late { background: var(--danger-bg); color: var(--danger); }
+.badge-neutral { background: var(--rose-pale); color: var(--rose); }
+
+/* ── Stats ── */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+.stat { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+.stat-num { font-family: 'Playfair Display', serif; font-size: 32px; color: var(--rose); }
+.stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ── Search ── */
+.search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
+.search-bar input { flex: 1; padding: 9px 14px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); outline: none; font-family: 'DM Sans', sans-serif; }
+.search-bar input:focus { border-color: var(--rose); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">Studio Belle</div>
+    <div class="tagline">Gestão de Salão</div>
+  </div>
+  <nav>
+    <div class="nav-section">Visão Geral</div>
+    <button class="nav-item active" onclick="go('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </button>
+
+    <div class="nav-section">Cadastros</div>
+    <button class="nav-item" onclick="go('cad-produto')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Serviços
+    </button>
+    <button class="nav-item" onclick="go('cad-cliente')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Clientes
+    </button>
+    <button class="nav-item" onclick="go('cad-atendimento')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Atendimentos
+    </button>
+
+    <div class="nav-section">Consultas</div>
+    <button class="nav-item" onclick="go('cons-clientes')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Consultar Clientes
+    </button>
+    <button class="nav-item" onclick="go('cons-servicos')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+      Consultar Serviços
+    </button>
+    <button class="nav-item" onclick="go('cons-atendimentos')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Retornos
+    </button>
+  </nav>
+</aside>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Dashboard -->
+  <div id="page-dashboard" class="page active">
+    <div class="page-header">
+      <h1>Bem-vinda! ✂</h1>
+      <p>Resumo do seu estúdio hoje</p>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-num" id="stat-clientes">0</div><div class="stat-label">Clientes cadastrados</div></div>
+      <div class="stat"><div class="stat-num" id="stat-servicos">0</div><div class="stat-label">Serviços cadastrados</div></div>
+      <div class="stat"><div class="stat-num" id="stat-retornos">0</div><div class="stat-label">Retornos esta semana</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Próximos retornos</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Cliente</th><th>Serviço</th><th>Data retorno</th><th>Status</th></tr></thead>
+          <tbody id="dash-retornos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cadastro Serviço/Produto -->
+  <div id="page-cad-produto" class="page">
+    <div class="page-header">
+      <h1>Serviços</h1>
+      <p>Cadastre os serviços e defina o prazo de retorno</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Novo serviço</div>
+      <div class="form-grid col2">
+        <div class="field"><label>Nome do serviço</label><input id="srv-nome" placeholder="Ex: Progressiva Brasileira"></div>
+        <div class="field"><label>Dias para retorno</label><input id="srv-dias" type="number" min="1" placeholder="Ex: 60"></div>
+      </div>
+      <div class="form-grid" style="margin-top:14px">
+        <div class="field"><label>Descrição (opcional)</label><input id="srv-desc" placeholder="Ex: Alisamento com queratina, dura até 3 meses"></div>
+      </div>
+      <div class="form-actions" style="margin-top:16px">
+        <button class="btn btn-primary" onclick="salvarServico()">✦ Salvar serviço</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Serviços cadastrados</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nome</th><th>Retorno (dias)</th><th>Descrição</th><th></th></tr></thead>
+          <tbody id="tb-servicos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cadastro Cliente -->
+  <div id="page-cad-cliente" class="page">
+    <div class="page-header">
+      <h1>Clientes</h1>
+      <p>Cadastre seus clientes</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Novo cliente</div>
+      <div class="form-grid col2">
+        <div class="field"><label>Nome completo</label><input id="cli-nome" placeholder="Ex: Ana Lima"></div>
+        <div class="field"><label>Telefone</label><input id="cli-tel" placeholder="(11) 99999-0000"></div>
+      </div>
+      <div class="form-actions" style="margin-top:16px">
+        <button class="btn btn-primary" onclick="salvarCliente()">✦ Salvar cliente</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Clientes cadastrados</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nome</th><th>Telefone</th><th>Cadastrado em</th><th></th></tr></thead>
+          <tbody id="tb-clientes"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cadastro Atendimento -->
+  <div id="page-cad-atendimento" class="page">
+    <div class="page-header">
+      <h1>Atendimentos</h1>
+      <p>Registre o atendimento e o retorno é calculado automaticamente</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Novo atendimento</div>
+      <div class="form-grid col3">
+        <div class="field"><label>Cliente</label>
+          <select id="at-cliente"><option value="">Selecione...</option></select>
+        </div>
+        <div class="field"><label>Serviço</label>
+          <select id="at-servico" onchange="calcRetorno()"><option value="">Selecione...</option></select>
+        </div>
+        <div class="field"><label>Data do atendimento</label>
+          <input id="at-data" type="date" onchange="calcRetorno()">
+        </div>
+      </div>
+      <div class="form-grid col2" style="margin-top:14px">
+        <div class="field"><label>Data prevista de retorno (automático)</label>
+          <input id="at-retorno" type="date" readonly style="background:#fce4ec;font-weight:500">
+        </div>
+        <div class="field"><label>Observações</label>
+          <input id="at-obs" placeholder="Alguma anotação sobre o atendimento">
+        </div>
+      </div>
+      <div class="form-actions" style="margin-top:16px">
+        <button class="btn btn-primary" onclick="salvarAtendimento()">✦ Registrar atendimento</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Atendimentos registrados</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Cliente</th><th>Serviço</th><th>Atendimento</th><th>Retorno previsto</th><th>Obs</th><th></th></tr></thead>
+          <tbody id="tb-atendimentos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consulta Clientes -->
+  <div id="page-cons-clientes" class="page">
+    <div class="page-header"><h1>Consultar Clientes</h1><p>Busque e veja o histórico de cada cliente</p></div>
+    <div class="search-bar">
+      <input id="busca-cli" placeholder="Buscar por nome ou telefone..." oninput="renderConsClientes()">
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nome</th><th>Telefone</th><th>Atendimentos</th><th>Último serviço</th><th>Próximo retorno</th></tr></thead>
+          <tbody id="tb-cons-clientes"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consulta Serviços -->
+  <div id="page-cons-servicos" class="page">
+    <div class="page-header"><h1>Consultar Serviços</h1><p>Veja quantas vezes cada serviço foi realizado</p></div>
+    <div class="search-bar">
+      <input id="busca-srv" placeholder="Buscar serviço..." oninput="renderConsServicos()">
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Serviço</th><th>Retorno (dias)</th><th>Total de atendimentos</th><th>Descrição</th></tr></thead>
+          <tbody id="tb-cons-servicos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consulta Retornos -->
+  <div id="page-cons-atendimentos" class="page">
+    <div class="page-header"><h1>Retornos</h1><p>Acompanhe os retornos previstos de todos os clientes</p></div>
+    <div class="search-bar">
+      <input id="busca-at" placeholder="Buscar por cliente ou serviço..." oninput="renderConsAtendimentos()">
+      <select id="filtro-status" onchange="renderConsAtendimentos()" style="padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px">
+        <option value="">Todos</option>
+        <option value="ok">Em dia</option>
+        <option value="soon">Esta semana</option>
+        <option value="late">Atrasados</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Cliente</th><th>Telefone</th><th>Serviço</th><th>Atendimento</th><th>Retorno previsto</th><th>Status</th></tr></thead>
+          <tbody id="tb-cons-atendimentos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DB (localStorage) ──────────────────────────────────────────
+const DB = {
+  get: k => JSON.parse(localStorage.getItem(k) || '[]'),
+  set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+};
+let servicos     = DB.get('belle_servicos');
+let clientes     = DB.get('belle_clientes');
+let atendimentos = DB.get('belle_atendimentos');
+
+const save = () => {
+  DB.set('belle_servicos', servicos);
+  DB.set('belle_clientes', clientes);
+  DB.set('belle_atendimentos', atendimentos);
+};
+
+// ── Navegação ──────────────────────────────────────────────────
+function go(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick').includes("'" + id + "'")) n.classList.add('active');
+  });
+  if (id === 'dashboard')        renderDashboard();
+  if (id === 'cad-produto')      renderTbServicos();
+  if (id === 'cad-cliente')      renderTbClientes();
+  if (id === 'cad-atendimento')  { renderTbAtendimentos(); populateSelects(); }
+  if (id === 'cons-clientes')    renderConsClientes();
+  if (id === 'cons-servicos')    renderConsServicos();
+  if (id === 'cons-atendimentos')renderConsAtendimentos();
+}
+
+// ── Toast ──────────────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Datas ──────────────────────────────────────────────────────
+const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR');
+const addDias = (ds, n) => {
+  const d = new Date(ds + 'T00:00:00'); d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+const today = () => new Date().toISOString().slice(0, 10);
+function statusRetorno(ds) {
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const ret  = new Date(ds + 'T00:00:00');
+  const diff = Math.round((ret - hoje) / 86400000);
+  if (diff < 0)  return {label: 'Atrasado ' + Math.abs(diff) + 'd', cls: 'badge-late'};
+  if (diff <= 7) return {label: diff + 'd restantes', cls: 'badge-soon'};
+  return {label: diff + 'd restantes', cls: 'badge-ok'};
+}
+
+// ── Serviços ───────────────────────────────────────────────────
+function salvarServico() {
+  const nome = document.getElementById('srv-nome').value.trim();
+  const dias = parseInt(document.getElementById('srv-dias').value);
+  const desc = document.getElementById('srv-desc').value.trim();
+  if (!nome || !dias || dias < 1) { toast('Preencha nome e dias de retorno.'); return; }
+  servicos.push({ id: Date.now(), nome, dias, desc, criadoEm: today() });
+  save(); renderTbServicos();
+  document.getElementById('srv-nome').value = '';
+  document.getElementById('srv-dias').value = '';
+  document.getElementById('srv-desc').value = '';
+  toast('✦ Serviço cadastrado!');
+}
+function excluirServico(id) {
+  if (!confirm('Excluir este serviço?')) return;
+  servicos = servicos.filter(s => s.id !== id); save(); renderTbServicos();
+}
+function renderTbServicos() {
+  const tb = document.getElementById('tb-servicos');
+  if (!servicos.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhum serviço cadastrado.</td></tr>'; return; }
+  tb.innerHTML = servicos.map(s => `
+    <tr>
+      <td style="font-weight:500">${s.nome}</td>
+      <td><span class="badge badge-neutral">${s.dias} dias</span></td>
+      <td style="color:var(--muted)">${s.desc || '—'}</td>
+      <td><button class="btn btn-danger" onclick="excluirServico(${s.id})">Excluir</button></td>
+    </tr>`).join('');
+}
+
+// ── Clientes ───────────────────────────────────────────────────
+function salvarCliente() {
+  const nome = document.getElementById('cli-nome').value.trim();
+  const tel  = document.getElementById('cli-tel').value.trim();
+  if (!nome) { toast('Informe o nome do cliente.'); return; }
+  clientes.push({ id: Date.now(), nome, tel, criadoEm: today() });
+  save(); renderTbClientes();
+  document.getElementById('cli-nome').value = '';
+  document.getElementById('cli-tel').value = '';
+  toast('✦ Cliente cadastrado!');
+}
+function excluirCliente(id) {
+  if (!confirm('Excluir este cliente?')) return;
+  clientes = clientes.filter(c => c.id !== id); save(); renderTbClientes();
+}
+function renderTbClientes() {
+  const tb = document.getElementById('tb-clientes');
+  if (!clientes.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhum cliente cadastrado.</td></tr>'; return; }
+  tb.innerHTML = clientes.map(c => `
+    <tr>
+      <td style="font-weight:500">${c.nome}</td>
+      <td>${c.tel || '—'}</td>
+      <td style="color:var(--muted)">${fmt(c.criadoEm)}</td>
+      <td><button class="btn btn-danger" onclick="excluirCliente(${c.id})">Excluir</button></td>
+    </tr>`).join('');
+}
+
+// ── Atendimentos ───────────────────────────────────────────────
+function populateSelects() {
+  const sc = document.getElementById('at-cliente');
+  const ss = document.getElementById('at-servico');
+  sc.innerHTML = '<option value="">Selecione o cliente...</option>' +
+    clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+  ss.innerHTML = '<option value="">Selecione o serviço...</option>' +
+    servicos.map(s => `<option value="${s.id}" data-dias="${s.dias}">${s.nome} (${s.dias}d)</option>`).join('');
+  document.getElementById('at-data').value = today();
+  calcRetorno();
+}
+function calcRetorno() {
+  const ss = document.getElementById('at-servico');
+  const data = document.getElementById('at-data').value;
+  const opt = ss.options[ss.selectedIndex];
+  const dias = opt && opt.dataset.dias ? parseInt(opt.dataset.dias) : null;
+  document.getElementById('at-retorno').value = (data && dias) ? addDias(data, dias) : '';
+}
+function salvarAtendimento() {
+  const cliId = parseInt(document.getElementById('at-cliente').value);
+  const srvId = parseInt(document.getElementById('at-servico').value);
+  const data  = document.getElementById('at-data').value;
+  const ret   = document.getElementById('at-retorno').value;
+  const obs   = document.getElementById('at-obs').value.trim();
+  if (!cliId || !srvId || !data) { toast('Selecione cliente, serviço e data.'); return; }
+  atendimentos.push({ id: Date.now(), cliId, srvId, data, retorno: ret, obs, criadoEm: today() });
+  save(); renderTbAtendimentos();
+  document.getElementById('at-cliente').value = '';
+  document.getElementById('at-servico').value = '';
+  document.getElementById('at-data').value = today();
+  document.getElementById('at-retorno').value = '';
+  document.getElementById('at-obs').value = '';
+  toast('✦ Atendimento registrado!');
+}
+function excluirAtendimento(id) {
+  if (!confirm('Excluir este atendimento?')) return;
+  atendimentos = atendimentos.filter(a => a.id !== id); save(); renderTbAtendimentos();
+}
+function renderTbAtendimentos() {
+  const tb = document.getElementById('tb-atendimentos');
+  if (!atendimentos.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="6">Nenhum atendimento registrado.</td></tr>'; return; }
+  const rows = [...atendimentos].reverse().map(a => {
+    const cli = clientes.find(c => c.id === a.cliId);
+    const srv = servicos.find(s => s.id === a.srvId);
+    return `<tr>
+      <td style="font-weight:500">${cli ? cli.nome : '—'}</td>
+      <td>${srv ? srv.nome : '—'}</td>
+      <td>${fmt(a.data)}</td>
+      <td>${a.retorno ? fmt(a.retorno) : '—'}</td>
+      <td style="color:var(--muted)">${a.obs || '—'}</td>
+      <td><button class="btn btn-danger" onclick="excluirAtendimento(${a.id})">Excluir</button></td>
+    </tr>`;
+  });
+  tb.innerHTML = rows.join('');
+}
+
+// ── Dashboard ──────────────────────────────────────────────────
+function renderDashboard() {
+  document.getElementById('stat-clientes').textContent = clientes.length;
+  document.getElementById('stat-servicos').textContent = servicos.length;
+  const emSemana = atendimentos.filter(a => {
+    if (!a.retorno) return false;
+    const d = new Date(a.retorno + 'T00:00:00');
+    const h = new Date(); h.setHours(0,0,0,0);
+    const diff = Math.round((d - h) / 86400000);
+    return diff >= 0 && diff <= 7;
+  });
+  document.getElementById('stat-retornos').textContent = emSemana.length;
+
+  const sorted = [...atendimentos]
+    .filter(a => a.retorno)
+    .sort((a, b) => a.retorno.localeCompare(b.retorno))
+    .slice(0, 8);
+
+  const tb = document.getElementById('dash-retornos');
+  if (!sorted.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhum retorno previsto.</td></tr>'; return; }
+  tb.innerHTML = sorted.map(a => {
+    const cli = clientes.find(c => c.id === a.cliId);
+    const srv = servicos.find(s => s.id === a.srvId);
+    const s = statusRetorno(a.retorno);
+    return `<tr>
+      <td style="font-weight:500">${cli ? cli.nome : '—'}</td>
+      <td>${srv ? srv.nome : '—'}</td>
+      <td>${fmt(a.retorno)}</td>
+      <td><span class="badge ${s.cls}">${s.label}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Consulta Clientes ──────────────────────────────────────────
+function renderConsClientes() {
+  const q = document.getElementById('busca-cli').value.toLowerCase();
+  const lista = clientes.filter(c =>
+    c.nome.toLowerCase().includes(q) || (c.tel || '').includes(q)
+  );
+  const tb = document.getElementById('tb-cons-clientes');
+  if (!lista.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum cliente encontrado.</td></tr>'; return; }
+  tb.innerHTML = lista.map(c => {
+    const ats = atendimentos.filter(a => a.cliId === c.id).sort((a,b) => b.data.localeCompare(a.data));
+    const ultimo = ats[0];
+    const srvUltimo = ultimo ? (servicos.find(s => s.id === ultimo.srvId) || {}).nome || '—' : '—';
+    const proxRetorno = ats.filter(a => a.retorno).sort((a,b) => a.retorno.localeCompare(b.retorno))[0];
+    const sr = proxRetorno ? statusRetorno(proxRetorno.retorno) : null;
+    return `<tr>
+      <td style="font-weight:500">${c.nome}</td>
+      <td>${c.tel || '—'}</td>
+      <td><span class="badge badge-neutral">${ats.length}</span></td>
+      <td>${srvUltimo}</td>
+      <td>${sr ? `<span class="badge ${sr.cls}">${fmt(proxRetorno.retorno)}</span>` : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Consulta Serviços ──────────────────────────────────────────
+function renderConsServicos() {
+  const q = document.getElementById('busca-srv').value.toLowerCase();
+  const lista = servicos.filter(s => s.nome.toLowerCase().includes(q));
+  const tb = document.getElementById('tb-cons-servicos');
+  if (!lista.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhum serviço encontrado.</td></tr>'; return; }
+  tb.innerHTML = lista.map(s => {
+    const total = atendimentos.filter(a => a.srvId === s.id).length;
+    return `<tr>
+      <td style="font-weight:500">${s.nome}</td>
+      <td><span class="badge badge-neutral">${s.dias}d</span></td>
+      <td><span class="badge badge-ok">${total} atendimento${total !== 1 ? 's' : ''}</span></td>
+      <td style="color:var(--muted)">${s.desc || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Consulta Atendimentos/Retornos ─────────────────────────────
+function renderConsAtendimentos() {
+  const q = document.getElementById('busca-at').value.toLowerCase();
+  const filtro = document.getElementById('filtro-status').value;
+  let lista = atendimentos.filter(a => {
+    const cli = clientes.find(c => c.id === a.cliId);
+    const srv = servicos.find(s => s.id === a.srvId);
+    const match = (cli && cli.nome.toLowerCase().includes(q)) || (srv && srv.nome.toLowerCase().includes(q));
+    if (!match) return false;
+    if (!filtro) return true;
+    if (!a.retorno) return false;
+    const s = statusRetorno(a.retorno);
+    if (filtro === 'late') return s.cls === 'badge-late';
+    if (filtro === 'soon') return s.cls === 'badge-soon';
+    if (filtro === 'ok')   return s.cls === 'badge-ok';
+    return true;
+  }).sort((a, b) => (a.retorno || '').localeCompare(b.retorno || ''));
+
+  const tb = document.getElementById('tb-cons-atendimentos');
+  if (!lista.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="6">Nenhum atendimento encontrado.</td></tr>'; return; }
+  tb.innerHTML = lista.map(a => {
+    const cli = clientes.find(c => c.id === a.cliId);
+    const srv = servicos.find(s => s.id === a.srvId);
+    const s = a.retorno ? statusRetorno(a.retorno) : null;
+    return `<tr>
+      <td style="font-weight:500">${cli ? cli.nome : '—'}</td>
+      <td>${cli ? (cli.tel || '—') : '—'}</td>
+      <td>${srv ? srv.nome : '—'}</td>
+      <td>${fmt(a.data)}</td>
+      <td>${a.retorno ? fmt(a.retorno) : '—'}</td>
+      <td>${s ? `<span class="badge ${s.cls}">${s.label}</span>` : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Init ───────────────────────────────────────────────────────
+renderDashboard();
+</script>
+</body>
+</html>
